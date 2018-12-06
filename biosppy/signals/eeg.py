@@ -31,7 +31,7 @@ def eeg_parallel(signal=None, sampling_rate=1000., labels=None, show=True, cores
         raise TypeError("Please specify an input signal.")
     signal = np.array(signal)
 
-    # 
+    # split signal into even-sized chunks
     signal_chunks = np.array_split(signal, cores, axis=0)
 
     print(signal_chunks[0].shape)
@@ -168,7 +168,6 @@ def eeg(signal=None, sampling_rate=1000., labels=None, show=True):
                                          size=0.25,
                                          overlap=0.5)
 
-    print('PLF complete')
     # get time vectors
     length = len(signal)
     T = (length - 1) / sampling_rate
