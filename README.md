@@ -16,6 +16,10 @@ Highlights:
 
 Documentation can be found at: <http://biosppy.readthedocs.org/>
 
+## My Modification
+
+The eeg library now contains a method called eeg_parallel. This command runs the eeg() function in parallel. Simply call eeg_parallel as you would with eeg with an aditional argument called cores. Cores specifies the number of threads you would like to run. 
+
 ## Installation
 
 Installation can be easily done with `pip`:
