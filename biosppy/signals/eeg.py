@@ -14,6 +14,8 @@ signals.
 # compat
 from __future__ import absolute_import, division, print_function
 from six.moves import range
+from threading import Thread
+import threading
 
 # 3rd party
 import numpy as np
@@ -21,6 +23,49 @@ import numpy as np
 # local
 from . import tools as st
 from .. import plotting, utils
+
+
+def eeg_parallel(signal=None, sampling_rate=1000., labels=None, show=True, cores=4):
+    # check inputs
+    if signal is None:
+        raise TypeError("Please specify an input signal.")
+    signal = np.array(signal)
+
+    # 
+    signal_chunks = np.array_split(signal, cores, axis=0)
+
+    print(signal_chunks[0].shape)
+
+    output = [None for _ in range(cores)]
+    threads = []
+
+    # Start Threads
+    for i in range(cores):
+        t = threading.Thread(target=eeg_thread, args=(i, output, signal_chunks[i], sampling_rate, labels, False))
+        threads.append(t)
+        print("--- Started Thread-{}".format(i))
+        t.start()
+
+    # Wait for threads to finish
+    for t in threads:
+        t.join()
+
+    names = ('ts', 'filtered', 'features_ts', 'theta', 'alpha_low',
+             'alpha_high', 'beta', 'gamma', 'plf_pairs', 'plf')
+
+    # Merge Results from threads
+    out = {}
+    for name in names:
+        temp = []
+        for i in range(cores):
+            temp.append(output[i][name])
+        out[name] = temp
+    return out
+    
+
+def eeg_thread(thread_num, output, signal=None, sampling_rate=1000., labels=None, show=True):
+    out = eeg(signal, sampling_rate, labels, show=False)
+    output[thread_num] = out
 
 
 def eeg(signal=None, sampling_rate=1000., labels=None, show=True):
@@ -72,6 +117,7 @@ def eeg(signal=None, sampling_rate=1000., labels=None, show=True):
     if signal is None:
         raise TypeError("Please specify an input signal.")
 
+
     # ensure numpy
     signal = np.array(signal)
 
@@ -91,6 +137,7 @@ def eeg(signal=None, sampling_rate=1000., labels=None, show=True):
                          order=8,
                          frequency=4,
                          sampling_rate=sampling_rate)
+
 
     aux, _ = st._filter_signal(b, a, signal=signal, check_phase=True, axis=0)
 
@@ -121,6 +168,7 @@ def eeg(signal=None, sampling_rate=1000., labels=None, show=True):
                                          size=0.25,
                                          overlap=0.5)
 
+    print('PLF complete')
     # get time vectors
     length = len(signal)
     T = (length - 1) / sampling_rate
